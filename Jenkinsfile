@@ -2,11 +2,15 @@ pipeline {
     agent any
 
     environment {
-        // Docker 이미지 이름
+        // Docker 이미지 이름 (변하지 않는 부분)
         DOCKER_IMAGE = "fastapi-app-local"
-        // 빌드 번호를 태그로 사용 (이미지 덮어쓰기 방지)
-        DOCKER_TAG = "${BUILD_NUMBER}"
+        
+        // 현재 날짜와 시간으로 태그 생성 (예: 20251022-211153)
+        DATE_TAG = sh(returnStdout: true, script: 'date +%Y%m%d-%H%M%S').trim()
 
+        // Jenkins VM의 내부 IP 주소 (변수 처리)
+        VM_IP = "10.0.2.10"
+        
         // Jenkins VM 내부에서 실행할 컨테이너 이름
         CONTAINER_NAME = "fastapi-test"
         
@@ -31,11 +35,10 @@ pipeline {
             steps {
                 echo '=== Building Docker image ==='
                 script {
-                    // 새로운 빌드 번호 태그로 이미지 빌드
-                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
-                    // 기존 'latest' 태그 업데이트 코드는 제거하여 덮어쓰기를 방지합니다.
+                    // DATE_TAG 형식으로 이미지 빌드
+                    sh "docker build -t ${DOCKER_IMAGE}:${DATE_TAG} ."
                 }
-                echo '✅ Docker image built successfully'
+                echo "✅ Docker image built successfully with tag: ${DATE_TAG}"
             }
         }
 
@@ -43,17 +46,18 @@ pipeline {
             steps {
                 echo '=== Deploying container on Jenkins VM ==='
                 sh """
-                    # ⚠️ 경고: 기존 컨테이너를 정지/제거하는 코드가 없으므로, 두 번째 실행 시 충돌이 발생합니다.
-                    # docker stop ${CONTAINER_NAME} 2>/dev/null || true
-                    # docker rm ${CONTAINER_NAME} 2>/dev/null || true
+                    echo "=== Stopping old container (${CONTAINER_NAME}) ==="
+                    # 기존 컨테이너 정지 및 제거 (충돌 방지)
+                    docker stop ${CONTAINER_NAME} 2>/dev/null || true
+                    docker rm ${CONTAINER_NAME} 2>/dev/null || true
 
                     echo "=== Starting new container ==="
-                    # VM의 \${HOST_PORT}를 컨테이너의 \${CONTAINER_PORT}로 연결하여 새 컨테이너 실행
+                    # DATE_TAG로 빌드된 이미지를 사용하여 컨테이너 실행
                     docker run -d \\
                         --name ${CONTAINER_NAME} \\
                         --restart unless-stopped \\
                         -p ${HOST_PORT}:${CONTAINER_PORT} \\
-                        ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        ${DOCKER_IMAGE}:${DATE_TAG}
 
                     echo "✅ Deployment completed on Jenkins VM"
                 """
@@ -63,17 +67,18 @@ pipeline {
 
     post {
         always {
-            echo '🧹 Cleaning up local images...'
-            // 태그 없는 이미지들만 정리
-            sh 'docker image prune -af || true'
+            // echo '🧹 Cleaning up local images (untagged or old)...'
+            // // 태그 없는 이미지들만 정리
+            // sh 'docker image prune -af || true'
         }
         success {
             echo """
             ✅✅✅ Deployment Successful! ✅✅✅
             =========================================
-            Application deployment initiated on VM port ${HOST_PORT}.
+            Image Tag Used: ${DATE_TAG}
+            Application is now running on VM port ${HOST_PORT}.
             
-            Access URL (VM internal): http://10.0.2.10:${HOST_PORT}
+            Access URL (VM internal): http://${VM_IP}:${HOST_PORT} 
             Access URL (Host PC/External via NAT): http://<Your_Host_IP>:${HOST_PORT}
             =========================================
             """
