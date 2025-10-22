@@ -16,7 +16,7 @@ pipeline {
         DOCKER_HUB_CRED = 'dockerhub-credentials' // Jenkins Credentials ID
         
         // 💡 SSH 인증 정보
-        SSH_CREDENTIALS = 'webapp-server' // Jenkins Credentials ID
+        SSH_CREDENTIALS = 'ssh-webapp-server' // Jenkins Credentials ID
         REMOTE_USER = 'appadmin' // WebApp 서버 접속 사용자 ID
     }
 
@@ -74,3 +74,20 @@ pipeline {
 
                         # 2. 기존 컨테이너 정리
                         docker stop ${env.CONTAINER_NAME} 2>/dev/null || true;
+                        docker rm ${env.CONTAINER_NAME} 2>/dev/null || true;
+
+                        # 3. 새로운 컨테이너 실행
+                        docker run -d --name ${env.CONTAINER_NAME} --restart unless-stopped -p ${env.HOST_PORT}:${env.CONTAINER_PORT} ${env.FULL_IMAGE_TAG}
+                    """
+                    
+                    // SSH Agent를 사용하여 WebApp 서버에 원격 접속 및 명령 실행
+                    sshagent(credentials: ["${env.SSH_CREDENTIALS}"]) {
+                        // Host key verification failed 문제 해결 후 이 명령이 성공해야 합니다.
+                        sh "ssh ${env.REMOTE_USER}@${env.DEPLOY_SERVER_IP} '${remoteCommands}'"
+                    }
+                }
+                echo "✅ Deployment completed on WebApp Server."
+            }
+        }
+    }
+}
