@@ -2,9 +2,14 @@ pipeline {
     agent any
 
     environment {
+        // Docker 이미지 이름
         DOCKER_IMAGE = "fastapi-app-local"
         DOCKER_TAG = "${BUILD_NUMBER}"
+
+        // Jenkins VM 내부에서 실행할 컨테이너 이름
         CONTAINER_NAME = "fastapi-test"
+        
+        // 컨테이너 포트 설정 (VM의 8000 포트에 연결)
         HOST_PORT = 8000
         CONTAINER_PORT = 8000 
     }
@@ -13,6 +18,7 @@ pipeline {
         stage('📦 Checkout Code') {
             steps {
                 echo '=== Checking out code from GitHub ==='
+                // TODO: 'github-credentials' ID를 Jenkins에 설정한 실제 Git Credentials ID로 변경해야 합니다.
                 git branch: 'main',
                     credentialsId: 'github-credentials', 
                     url: 'https://github.com/mglee0812/devops-test.git'
@@ -35,9 +41,12 @@ pipeline {
             steps {
                 echo '=== Deploying container on Jenkins VM ==='
                 sh """
+                    echo "=== Stopping old container (${CONTAINER_NAME}) ==="
                     docker stop ${CONTAINER_NAME} 2>/dev/null || true
                     docker rm ${CONTAINER_NAME} 2>/dev/null || true
 
+                    echo "=== Starting new container ==="
+                    // VM의 ${HOST_PORT}를 컨테이너의 ${CONTAINER_PORT}로 연결하여 새 컨테이너 실행
                     docker run -d \\
                         --name ${CONTAINER_NAME} \\
                         --restart unless-stopped \\
@@ -53,26 +62,21 @@ pipeline {
             steps {
                 echo '=== Performing health check ==='
                 script {
-                    def MAX_ATTEMPTS = 6
-                    def SLEEP_TIME = 5
-                    
-                    for (int i = 1; i <= MAX_ATTEMPTS; i++) {
-                        sleep SLEEP_TIME
-                        echo "Attempting health check (Attempt ${i}/${MAX_ATTEMPTS})..."
-                        
-                        def healthCheck = sh(
-                            script: "docker exec ${CONTAINER_NAME} curl -f -s -o /dev/null -w '%{http_code}' http://localhost:${CONTAINER_PORT} || echo '000'",
-                            returnStdout: true
-                        ).trim()
+                    sleep 10 // 컨테이너 시작 대기
 
-                        echo "Health check status: ${healthCheck}"
-                        
-                        if (healthCheck == '200') {
-                            echo '✅ Health check passed!'
-                            return
-                        }
+                    // VM 내부의 HOST_PORT (8000)로 헬스 체크를 수행합니다.
+                    def healthCheck = sh(
+                        script: "curl -f -s -o /dev/null -w \"%{http_code}\" http://localhost:${HOST_PORT}/health || echo '000'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Health check status: ${healthCheck}"
+
+                    if (healthCheck == '200') {
+                        echo '✅ Health check passed!'
+                    } else {
+                        error("❌ Health check failed with status: ${healthCheck}. Check container logs.")
                     }
-                    error("❌ Health check failed after ${MAX_ATTEMPTS} attempts. Check container logs and server binding (0.0.0.0).")
                 }
             }
         }
@@ -88,6 +92,9 @@ pipeline {
             ✅✅✅ Deployment Successful! ✅✅✅
             =========================================
             Application is now running on VM port ${HOST_PORT}.
+
+            Access URL (VM internal): http://10.0.2.10:${HOST_PORT}
+            Access URL (Host PC/External via NAT): http://<Your_Host_IP>:${HOST_PORT}
             =========================================
             """
         }
