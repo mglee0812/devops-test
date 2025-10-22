@@ -83,7 +83,7 @@ pipeline {
                     // SSH Agent를 사용하여 WebApp 서버에 원격 접속 및 명령 실행
                     sshagent(credentials: ["${env.SSH_CREDENTIALS}"]) {
                         // Host key verification failed 문제 해결 후 이 명령이 성공해야 합니다.
-                        sh "ssh ${env.REMOTE_USER}@${env.DEPLOY_SERVER_IP} '${remoteCommands}'"
+                        sh "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${env.REMOTE_USER}@${env.DEPLOY_SERVER_IP} '${remoteCommands}'"
                     }
                 }
                 echo "✅ Deployment completed on WebApp Server."
