@@ -16,7 +16,7 @@ pipeline {
         DOCKER_HUB_CRED = 'dockerhub-credentials' // Jenkins Credentials ID
         
         // 💡 SSH 인증 정보
-        SSH_CREDENTIALS = 'ssh-webapp-server' // Jenkins Credentials ID
+        SSH_CREDENTIALS = 'webapp-server' // Jenkins Credentials ID
         REMOTE_USER = 'appadmin' // WebApp 서버 접속 사용자 ID (수동 테스트 기반으로 'appadmin'으로 변경)
     }
 
