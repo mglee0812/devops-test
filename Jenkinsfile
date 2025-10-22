@@ -43,13 +43,12 @@ pipeline {
             steps {
                 echo '=== Deploying container on Jenkins VM ==='
                 sh """
-                    // ⚠️ 경고: 기존 컨테이너를 정지/제거하는 코드가 없으므로, 두 번째 실행 시 충돌이 발생합니다.
-                    // docker stop ${CONTAINER_NAME} 2>/dev/null || true
-                    // docker rm ${CONTAINER_NAME} 2>/dev/null || true
+                    # ⚠️ 경고: 기존 컨테이너를 정지/제거하는 코드가 없으므로, 두 번째 실행 시 충돌이 발생합니다.
+                    # docker stop ${CONTAINER_NAME} 2>/dev/null || true
+                    # docker rm ${CONTAINER_NAME} 2>/dev/null || true
 
                     echo "=== Starting new container ==="
-                    // VM의 ${HOST_PORT}를 컨테이너의 ${CONTAINER_PORT}로 연결하여 새 컨테이너 실행
-                    // 배포 시 DOCKER_TAG (빌드 번호)를 명시적으로 사용합니다.
+                    # VM의 \${HOST_PORT}를 컨테이너의 \${CONTAINER_PORT}로 연결하여 새 컨테이너 실행
                     docker run -d \\
                         --name ${CONTAINER_NAME} \\
                         --restart unless-stopped \\
