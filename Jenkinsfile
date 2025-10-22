@@ -67,9 +67,9 @@ pipeline {
 
     post {
         always {
-            // echo '🧹 Cleaning up local images (untagged or old)...'
-            // // 태그 없는 이미지들만 정리
-            // sh 'docker image prune -af || true'
+            echo '🧹 Cleaning up local images (untagged or old)...'
+            // 태그 없는 이미지들만 정리
+            sh 'docker image prune -af || true'
         }
         success {
             echo """
