@@ -9,7 +9,7 @@ app = FastAPI(
 )
 
 # 1. 홈페이지 (HTML 렌더링)
-@app.get("/", response_class=HTMLResponse)
+@app.get("/info", response_class=HTMLResponse)
 async def read_root():
     """메인 페이지: 배포 성공 메시지 출력"""
     
