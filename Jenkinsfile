@@ -47,5 +47,4 @@ pipeline {
             }
         }
     }
-    // ... post 블록은 env.DATE_TAG를 사용하여 그대로 둡니다. ...
 }
