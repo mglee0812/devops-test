@@ -66,8 +66,8 @@ pipeline {
             steps {
                 echo "=== Deploying on WebApp Server: ${env.DEPLOY_SERVER_IP} ==="
                 
-                // SSH Agent를 사용하여 WebApp 서버에 원격 접속
-                sshagent(credentials: ["${env.SSH_CREDENTIALS}"]) {
+                // 💡 script 블록을 추가하여 Groovy 변수 선언 및 복잡한 로직을 처리합니다.
+                script {
                     
                     // WebApp 서버 쉘에서 실행할 명령어 문자열 정의
                     def remoteCommands = """
@@ -90,11 +90,13 @@ pipeline {
                         
                         echo "✅ Remote Docker operations completed."
                     """
-
-                    // 원격 서버로 SSH 명령 실행
-                    // WebApp 서버에 'ssh' 명령 실행 권한과 'docker' 실행 권한이 필요합니다.
-                    sh "ssh -tt ${env.REMOTE_USER}@${env.DEPLOY_SERVER_IP} '${remoteCommands}'"
-                }
+                    
+                    // SSH Agent를 사용하여 WebApp 서버에 원격 접속 및 명령 실행
+                    sshagent(credentials: ["${env.SSH_CREDENTIALS}"]) {
+                        // 원격 서버로 SSH 명령 실행
+                        sh "ssh -tt ${env.REMOTE_USER}@${env.DEPLOY_SERVER_IP} '${remoteCommands}'"
+                    }
+                } // 💡 script 블록 끝
                 echo "✅ Deployment completed on WebApp Server."
             }
         }
