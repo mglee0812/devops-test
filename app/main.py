@@ -10,7 +10,7 @@ import uvicorn
 app = FastAPI(
     title="My First FastAPI App",
     description="DevOps 과제용 웹 애플리케이션",
-    version="1.0.0"
+    version="1.1.0-DEPLOY-TEST"
 )
 
 # 정적 파일 (CSS, JS) 경로 설정
