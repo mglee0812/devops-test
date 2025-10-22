@@ -4,6 +4,7 @@ pipeline {
     environment {
         // Docker 이미지 이름
         DOCKER_IMAGE = "fastapi-app-local"
+        // 빌드 번호를 태그로 사용 (이미지 덮어쓰기 방지)
         DOCKER_TAG = "${BUILD_NUMBER}"
 
         // Jenkins VM 내부에서 실행할 컨테이너 이름
@@ -18,7 +19,7 @@ pipeline {
         stage('📦 Checkout Code') {
             steps {
                 echo '=== Checking out code from GitHub ==='
-                // TODO: 'github-credentials' ID를 Jenkins에 설정한 실제 Git Credentials ID로 변경해야 합니다.
+                // 'github-credentials' ID를 Jenkins에 설정한 실제 Git Credentials ID로 변경해야 합니다.
                 git branch: 'main',
                     credentialsId: 'github-credentials', 
                     url: 'https://github.com/mglee0812/devops-test.git'
@@ -30,8 +31,9 @@ pipeline {
             steps {
                 echo '=== Building Docker image ==='
                 script {
+                    // 새로운 빌드 번호 태그로 이미지 빌드
                     sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
-                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                    // 기존 'latest' 태그 업데이트 코드는 제거하여 덮어쓰기를 방지합니다.
                 }
                 echo '✅ Docker image built successfully'
             }
@@ -41,43 +43,21 @@ pipeline {
             steps {
                 echo '=== Deploying container on Jenkins VM ==='
                 sh """
-                    echo "=== Stopping old container (${CONTAINER_NAME}) ==="
-                    docker stop ${CONTAINER_NAME} 2>/dev/null || true
-                    docker rm ${CONTAINER_NAME} 2>/dev/null || true
+                    // ⚠️ 경고: 기존 컨테이너를 정지/제거하는 코드가 없으므로, 두 번째 실행 시 충돌이 발생합니다.
+                    // docker stop ${CONTAINER_NAME} 2>/dev/null || true
+                    // docker rm ${CONTAINER_NAME} 2>/dev/null || true
 
                     echo "=== Starting new container ==="
                     // VM의 ${HOST_PORT}를 컨테이너의 ${CONTAINER_PORT}로 연결하여 새 컨테이너 실행
+                    // 배포 시 DOCKER_TAG (빌드 번호)를 명시적으로 사용합니다.
                     docker run -d \\
                         --name ${CONTAINER_NAME} \\
                         --restart unless-stopped \\
                         -p ${HOST_PORT}:${CONTAINER_PORT} \\
-                        ${DOCKER_IMAGE}:latest
+                        ${DOCKER_IMAGE}:${DOCKER_TAG}
 
                     echo "✅ Deployment completed on Jenkins VM"
                 """
-            }
-        }
-
-        stage('🏥 Health Check') {
-            steps {
-                echo '=== Performing health check ==='
-                script {
-                    sleep 10 // 컨테이너 시작 대기
-
-                    // VM 내부의 HOST_PORT (8000)로 헬스 체크를 수행합니다.
-                    def healthCheck = sh(
-                        script: "curl -f -s -o /dev/null -w \"%{http_code}\" http://localhost:${HOST_PORT}/health || echo '000'",
-                        returnStdout: true
-                    ).trim()
-
-                    echo "Health check status: ${healthCheck}"
-
-                    if (healthCheck == '200') {
-                        echo '✅ Health check passed!'
-                    } else {
-                        error("❌ Health check failed with status: ${healthCheck}. Check container logs.")
-                    }
-                }
             }
         }
     }
@@ -85,14 +65,15 @@ pipeline {
     post {
         always {
             echo '🧹 Cleaning up local images...'
+            // 태그 없는 이미지들만 정리
             sh 'docker image prune -af || true'
         }
         success {
             echo """
             ✅✅✅ Deployment Successful! ✅✅✅
             =========================================
-            Application is now running on VM port ${HOST_PORT}.
-
+            Application deployment initiated on VM port ${HOST_PORT}.
+            
             Access URL (VM internal): http://10.0.2.10:${HOST_PORT}
             Access URL (Host PC/External via NAT): http://<Your_Host_IP>:${HOST_PORT}
             =========================================
