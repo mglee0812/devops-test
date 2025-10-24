@@ -36,7 +36,7 @@ pipeline {
                 echo '=== Building Docker image ==='
                 script {
                     // 현재 날짜 및 시간으로 태그 생성
-                    def dateTag = sh(returnStdout: true, script: 'date +%Y%m%d-%H%M%S').trim()
+                    def dateTag = sh(returnStdout: true, script: 'date +%Y%m%d-%H%M').trim()
                     env.DATE_TAG = dateTag
 
                     // Docker Hub Full Tag
