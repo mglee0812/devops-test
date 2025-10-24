@@ -1,43 +1,130 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from datetime import datetime
+import os
 
-# FastAPI 앱 생성 및 버전 업데이트
+# FastAPI 앱 생성
 app = FastAPI(
-    title="Simple CI/CD Test App",
-    description="극도로 단순화된 배포 테스트 앱",
-    version="1.1.0-DEPLOY-TEST" # 배포 확인을 위한 버전 태그
+    title="DevOps CI/CD Demo",
+    description="Jenkins를 통한 자동 배포 데모",
+    version="2.0.0"
 )
 
-# 1. 홈페이지 (HTML 렌더링)
-@app.get("/info", response_class=HTMLResponse)
-async def read_root():
-    """메인 페이지: 배포 성공 메시지 출력"""
-    
-    # 💡 배포 성공 확인 메시지
-    message = "<h1>✅ Jenkins CI/CD 파이프라인 배포 성공 확인! (V1.1.0)</h1>"
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>{app.title}</title>
-    </head>
-    <body>
-        {message}
-        <p>현재 애플리케이션 버전: {app.version}</p>
-        <p>배포 서버 IP: (현재 실행 중인 10.0.2.11)</p>
-        <p>Health Check: <a href="/health">/health</a> 엔드포인트 확인</p>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content, status_code=200)
+# 정적 파일 및 템플릿 설정
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
-# 2. Health Check (Jenkins/모니터링에서 사용)
+# 간단한 상품 데이터 (in-memory)
+products = [
+    {"id": 1, "name": "MacBook Pro", "price": 3500000, "stock": 5},
+    {"id": 2, "name": "iPad Air", "price": 850000, "stock": 12},
+    {"id": 3, "name": "AirPods Pro", "price": 350000, "stock": 0},
+    {"id": 4, "name": "Apple Watch", "price": 550000, "stock": 8},
+]
+
+# 배포 정보
+deployment_info = {
+    "version": "2.0.0",
+    "build_number": os.getenv("BUILD_NUMBER", "dev"),
+    "deployed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "server": "10.0.2.6"
+}
+
+# ==================== 웹 페이지 ====================
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    """메인 홈페이지"""
+    total_products = len(products)
+    in_stock = sum(1 for p in products if p["stock"] > 0)
+    out_of_stock = total_products - in_stock
+    total_value = sum(p["price"] * p["stock"] for p in products)
+    
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "title": "DevOps CI/CD Demo",
+            "deployment": deployment_info,
+            "products": products,
+            "stats": {
+                "total": total_products,
+                "in_stock": in_stock,
+                "out_of_stock": out_of_stock,
+                "total_value": total_value
+            }
+        }
+    )
+
+# ==================== API 엔드포인트 ====================
+
 @app.get("/health")
 async def health_check():
-    """서버 상태 확인"""
+    """Health Check (Jenkins에서 사용)"""
     return {
-        "status": "healthy", 
-        "version": app.version,
-        "message": "Application is running successfully on webapp-server"
+        "status": "healthy",
+        "version": deployment_info["version"],
+        "build": deployment_info["build_number"],
+        "message": "Application is running successfully!"
     }
+
+@app.get("/api/info")
+async def app_info():
+    """애플리케이션 정보"""
+    return {
+        "app_name": app.title,
+        "version": app.version,
+        "deployment": deployment_info,
+        "features": [
+            "✅ GitHub Webhook 연동",
+            "✅ Jenkins 자동 빌드",
+            "✅ Docker 컨테이너 배포",
+            "✅ Health Check 지원"
+        ]
+    }
+
+@app.get("/api/products")
+async def get_products():
+    """상품 목록 조회"""
+    return products
+
+@app.get("/api/products/{product_id}")
+async def get_product(product_id: int):
+    """특정 상품 조회"""
+    for product in products:
+        if product["id"] == product_id:
+            return product
+    return {"error": "Product not found"}
+
+@app.get("/api/stats")
+async def get_stats():
+    """통계 정보"""
+    total_products = len(products)
+    in_stock = sum(1 for p in products if p["stock"] > 0)
+    total_value = sum(p["price"] * p["stock"] for p in products)
+    
+    return {
+        "total_products": total_products,
+        "in_stock_count": in_stock,
+        "out_of_stock_count": total_products - in_stock,
+        "total_inventory_value": total_value,
+        "average_price": sum(p["price"] for p in products) / total_products
+    }
+
+# ==================== 시작/종료 이벤트 ====================
+
+@app.on_event("startup")
+async def startup_event():
+    print("=" * 60)
+    print(f"🚀 FastAPI Application Started")
+    print(f"📦 Version: {deployment_info['version']}")
+    print(f"🔨 Build: {deployment_info['build_number']}")
+    print(f"🖥️  Server: {deployment_info['server']}")
+    print(f"📅 Deployed: {deployment_info['deployed_at']}")
+    print("=" * 60)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    print("👋 Application shutting down...")

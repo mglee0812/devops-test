@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 DevOps CI/CD Pipeline Demo</h1>
+            <p>Jenkins + Docker + GitHub 자동 배포</p>
+            <div class="version">
+                Version {{ deployment.version }} | Build #{{ deployment.build_number }}
+            </div>
+            <div class="deploy-time">
+                배포 시간: {{ deployment.deployed_at }}
+            </div>
+        </header>
+
+        <section class="stats">
+            <div class="stat-box">
+                <div class="stat-number">{{ stats.total }}</div>
+                <div class="stat-label">전체 상품</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">{{ stats.in_stock }}</div>
+                <div class="stat-label">재고 있음</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">{{ stats.out_of_stock }}</div>
+                <div class="stat-label">품절</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">₩{{ "{:,}".format(stats.total_value) }}</div>
+                <div class="stat-label">총 재고 가치</div>
+            </div>
+        </section>
+
+        <section class="products">
+            <h2>📦 상품 목록</h2>
+            <div class="product-grid">
+                {% for product in products %}
+                <div class="product-card {% if product.stock == 0 %}out-of-stock{% endif %}">
+                    <h3>{{ product.name }}</h3>
+                    <p class="price">₩{{ "{:,}".format(product.price) }}</p>
+                    <p class="stock">
+                        {% if product.stock > 0 %}
+                            ✅ 재고: {{ product.stock }}개
+                        {% else %}
+                            ❌ 품절
+                        {% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="api-info">
+            <h2>🔗 API 엔드포인트</h2>
+            <div class="api-list">
+                <a href="/health" target="_blank">GET /health - Health Check</a>
+                <a href="/api/info" target="_blank">GET /api/info - 앱 정보</a>
+                <a href="/api/products" target="_blank">GET /api/products - 상품 목록</a>
+                <a href="/api/stats" target="_blank">GET /api/stats - 통계</a>
+                <a href="/docs" target="_blank">GET /docs - API 문서 (Swagger)</a>
+            </div>
+        </section>
+
+        <footer>
+            <p>🎯 CI/CD Pipeline: GitHub → Jenkins → Docker → Deployment</p>
+            <p>🖥️ Server: {{ deployment.server }}</p>
+        </footer>
+    </div>
+
+    <script>
+        // 페이지 로드 시 통계 업데이트
+        console.log('✅ Page loaded successfully');
+        console.log('📦 Deployment Info:', {{ deployment | tojson }});
+    </script>
+</body>
+</html>
