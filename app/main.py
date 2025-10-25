@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
+import pytz
 import os
 
 # FastAPI 앱 생성
@@ -12,6 +13,9 @@ app = FastAPI(
     version="2.0.0"
 )
 
+# 한국 타임존 설정
+KST = pytz.timezone('Asia/Seoul')
+
 # 정적 파일 및 템플릿 설정
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -20,15 +24,15 @@ templates = Jinja2Templates(directory="templates")
 products = [
     {"id": 1, "name": "MacBook Pro", "price": 3500000, "stock": 5},
     {"id": 2, "name": "iPad Air", "price": 850000, "stock": 12},
-    {"id": 3, "name": "AirPods Pro", "price": 350000, "stock": 0}
+    {"id": 3, "name": "AirPods Pro", "price": 350000, "stock": 0},
+    {"id": 4, "name": "Apple Watch", "price": 550000, "stock": 8}
 ]
 
-# 배포 정보 - deployed_at은 startup 이벤트에서 설정
+# 배포 정보
 deployment_info = {
     "version": "2.0.0",
     "build_number": os.getenv("BUILD_NUMBER", "dev"),
-    "build_timestamp": os.getenv("BUILD_TIMESTAMP", "unknown"),  # Dockerfile에서 전달
-    "deployed_at": None,  # startup 시 설정됨
+    "deployed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "server": "10.0.2.6"
 }
 
@@ -117,16 +121,12 @@ async def get_stats():
 
 @app.on_event("startup")
 async def startup_event():
-    # 컨테이너 시작 시간 설정 (실제 배포 시간)
-    deployment_info["deployed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
     print("=" * 60)
     print(f"🚀 FastAPI Application Started")
     print(f"📦 Version: {deployment_info['version']}")
-    print(f"🔨 Build Number: {deployment_info['build_number']}")
-    print(f"🏗️  Build Time: {deployment_info['build_timestamp']}")
+    print(f"🔨 Build: {deployment_info['build_number']}")
     print(f"🖥️  Server: {deployment_info['server']}")
-    print(f"📅 Deployed At: {deployment_info['deployed_at']}")
+    print(f"📅 Deployed: {deployment_info['deployed_at']}")
     print("=" * 60)
 
 @app.on_event("shutdown")
