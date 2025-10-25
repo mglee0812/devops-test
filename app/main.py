@@ -24,11 +24,12 @@ products = [
     {"id": 4, "name": "Apple Watch", "price": 550000, "stock": 8}
 ]
 
-# 배포 정보
+# 배포 정보 - deployed_at은 startup 이벤트에서 설정
 deployment_info = {
     "version": "2.0.0",
     "build_number": os.getenv("BUILD_NUMBER", "dev"),
-    "deployed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "build_timestamp": os.getenv("BUILD_TIMESTAMP", "unknown"),  # Dockerfile에서 전달
+    "deployed_at": None,  # startup 시 설정됨
     "server": "10.0.2.6"
 }
 
@@ -117,12 +118,16 @@ async def get_stats():
 
 @app.on_event("startup")
 async def startup_event():
+    # 컨테이너 시작 시간 설정 (실제 배포 시간)
+    deployment_info["deployed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     print("=" * 60)
     print(f"🚀 FastAPI Application Started")
     print(f"📦 Version: {deployment_info['version']}")
-    print(f"🔨 Build: {deployment_info['build_number']}")
+    print(f"🔨 Build Number: {deployment_info['build_number']}")
+    print(f"🏗️  Build Time: {deployment_info['build_timestamp']}")
     print(f"🖥️  Server: {deployment_info['server']}")
-    print(f"📅 Deployed: {deployment_info['deployed_at']}")
+    print(f"📅 Deployed At: {deployment_info['deployed_at']}")
     print("=" * 60)
 
 @app.on_event("shutdown")
