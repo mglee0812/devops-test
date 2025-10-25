@@ -26,9 +26,11 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "[system] GitHub Repository 소스체크 시작"
+
                 git branch: 'main',
                     credentialsId: 'github-credentials', 
                     url: 'https://github.com/mglee0812/devops-test.git'
+                    
                 echo "[system] GitHub Repository 소스체크 완료"
             }
         }
