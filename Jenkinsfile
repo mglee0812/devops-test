@@ -25,17 +25,17 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                echo '=== Checking out code from GitHub ==='
+                echo "[system] GitHub Repository 소스체크 시작"
                 git branch: 'main',
                     credentialsId: 'github-credentials', 
                     url: 'https://github.com/mglee0812/devops-test.git'
-                echo 'Code checkout successful'
+                echo "[system] GitHub Repository 소스체크 완료"
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo '=== Building Docker image ==='
+                echo "[system] Docker image 빌드 시작"
                 script {
 
                     // 태그명 지정
@@ -47,13 +47,13 @@ pipeline {
                     // 이미지 빌드
                     sh "docker build -t ${env.FULL_IMAGE_TAG} ."
                 }
-                echo "Docker image built successfully with tag: ${env.FULL_IMAGE_TAG}"
+                echo "[system] Docker image 빌드 완료"
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                echo "=== Pushing image to Docker Hub: ${env.FULL_IMAGE_TAG} ==="
+                echo "[system] Docker Hub Image push 시작"
 
                 // Docker Hub 로그인 및 Push
                 withCredentials([usernamePassword(credentialsId: "${env.DOCKER_HUB_CRED}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -61,13 +61,13 @@ pipeline {
                     sh "docker push ${env.FULL_IMAGE_TAG}"
                     sh 'docker logout'
                 }
-                echo "Image push successful"
+                echo "[system] Docker Hub Image push 성공"
             }
         }
 
         stage('Remote Pull & Deploy') {
             steps {
-                echo "=== Deploying on WebApp Server: ${env.DEPLOY_SERVER_IP} ==="
+                echo "[system] WebApp 배포 시작"
                 
                 script {
                     
@@ -82,7 +82,7 @@ pipeline {
                         sh "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${env.REMOTE_USER}@${env.DEPLOY_SERVER_IP} '${remoteCommands}'"
                     }
                 }
-                echo "Deployment completed on WebApp Server."
+                echo "[system] WebApp 배포 완료"
             }
         }
     }
