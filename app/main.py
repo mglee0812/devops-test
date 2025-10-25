@@ -25,7 +25,8 @@ products = [
     {"id": 1, "name": "MacBook Pro", "price": 3500000, "stock": 5},
     {"id": 2, "name": "iPad Air", "price": 850000, "stock": 12},
     {"id": 3, "name": "AirPods Pro", "price": 350000, "stock": 0},
-    {"id": 4, "name": "Apple Watch", "price": 550000, "stock": 8}
+    {"id": 4, "name": "Apple Watch", "price": 550000, "stock": 8},
+    {"id": 4, "name": "Apple", "price": 1000000, "stock": 0}
 ]
 
 # 배포 정보 - 모든 키를 미리 정의
