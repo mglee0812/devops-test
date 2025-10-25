@@ -33,7 +33,7 @@ deployment_info = {
     "version": "2.0.0",
     "build_number": os.getenv("BUILD_NUMBER", "dev"),
     "deployed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    "server": "10.0.2.6"
+    "server": "192.168.55.101"
 }
 
 # ==================== 웹 페이지 ====================
@@ -121,12 +121,17 @@ async def get_stats():
 
 @app.on_event("startup")
 async def startup_event():
+    # 한국 시간으로 배포 시간 설정
+    now_kst = datetime.now(KST)
+    deployment_info["deployed_at"] = now_kst.strftime("%Y-%m-%d %H:%M:%S")
+    
     print("=" * 60)
     print(f"🚀 FastAPI Application Started")
     print(f"📦 Version: {deployment_info['version']}")
-    print(f"🔨 Build: {deployment_info['build_number']}")
+    print(f"🔨 Build Number: {deployment_info['build_number']}")
+    print(f"🏗️  Build Time: {deployment_info['build_timestamp']}")
     print(f"🖥️  Server: {deployment_info['server']}")
-    print(f"📅 Deployed: {deployment_info['deployed_at']}")
+    print(f"📅 Deployed At: {deployment_info['deployed_at']} KST")
     print("=" * 60)
 
 @app.on_event("shutdown")

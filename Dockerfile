@@ -1,6 +1,21 @@
 # Python 3.11 slim 이미지 사용
 FROM python:3.11-slim
 
+# 타임존 설정
+ENV TZ=Asia/Seoul
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 빌드 시간을 ARG로 받기
+ARG BUILD_DATE
+ARG BUILD_VERSION=1.0.0
+
+# 레이블로 메타데이터 저장
+LABEL build_date="${BUILD_DATE}"
+LABEL version="${BUILD_VERSION}"
+
+# 환경 변수로 설정
+ENV BUILD_TIMESTAMP=${BUILD_DATE}
+
 # 작업 디렉토리 설정
 WORKDIR /app
 
