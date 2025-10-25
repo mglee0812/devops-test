@@ -4,7 +4,7 @@ pipeline {
     environment {
     
         // 배포 대상 서버 정보
-        DEPLOY_SERVER_IP = "10.0.2.11"
+        DEPLOY_SERVER_IP = "192.168.55.101"
         HOST_PORT = 8000
         CONTAINER_PORT = 8000 
 
@@ -12,7 +12,7 @@ pipeline {
         SSH_CREDENTIALS = 'webapp-server'
         REMOTE_USER = 'appadmin'
 
-        // Docker 이미지 이름
+        // Docker, Container 정보
         DOCKER_IMAGE = "fastapi-img"
         CONTAINER_NAME = "fastapi-app"
         
@@ -37,7 +37,8 @@ pipeline {
             steps {
                 echo '=== Building Docker image ==='
                 script {
-                    // 현재 날짜 및 시간으로 태그 생성
+
+                    // 태그명 지정
                     def dateTag = sh(returnStdout: true, script: 'date +%Y%m%d-%H%M').trim()
                     env.DATE_TAG = dateTag
 
@@ -71,19 +72,13 @@ pipeline {
                 script {
                     
                     def remoteCommands = """
-                        # 1. 이미지 Pull
                         docker pull ${env.FULL_IMAGE_TAG};
-
-                        # 2. 기존 컨테이너 정리
                         docker stop ${env.CONTAINER_NAME} 2>/dev/null || true;
                         docker rm ${env.CONTAINER_NAME} 2>/dev/null || true;
-
-                        # 3. 새로운 컨테이너 실행
                         docker run -d --name ${env.CONTAINER_NAME} --restart unless-stopped -p ${env.HOST_PORT}:${env.CONTAINER_PORT} ${env.FULL_IMAGE_TAG}
                     """
                     
                     sshagent(credentials: ["${env.SSH_CREDENTIALS}"]) {
-
                         sh "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${env.REMOTE_USER}@${env.DEPLOY_SERVER_IP} '${remoteCommands}'"
                     }
                 }
