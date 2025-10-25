@@ -13,12 +13,12 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# 한국 타임존 설정
-KST = pytz.timezone('Asia/Seoul')
-
 # 정적 파일 및 템플릿 설정
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# 한국 타임존 설정
+KST = pytz.timezone('Asia/Seoul')
 
 # 간단한 상품 데이터 (in-memory)
 products = [
@@ -28,12 +28,13 @@ products = [
     {"id": 4, "name": "Apple Watch", "price": 550000, "stock": 8}
 ]
 
-# 배포 정보
+# 배포 정보 - 모든 키를 미리 정의
 deployment_info = {
     "version": "2.0.0",
     "build_number": os.getenv("BUILD_NUMBER", "dev"),
-    "deployed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    "server": "192.168.55.101"
+    "build_timestamp": os.getenv("BUILD_TIMESTAMP", "unknown"),
+    "deployed_at": None,
+    "server": "10.0.2.6"
 }
 
 # ==================== 웹 페이지 ====================
